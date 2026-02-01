@@ -7,7 +7,25 @@ Tài liệu này mô tả **toàn bộ quy trình triển khai Fashion Project l
 > * Giữ nguyên thứ tự chạy lệnh
 > * Thay đổi mật khẩu và project id khi dùng thực tế
 > * Không commit thông tin nhạy cảm lên repository
+🌐 URL triển khai
 
+Admin Frontend (AdFe): https://fashion-admin-1010294357760.us-central1.run.app
+
+Client Frontend (ClientFe): https://fashion-client-1010294357760.us-central1.run.app
+
+🔐 Tài khoản demo
+
+Admin (AdFe)
+
+Tài khoản: andmin
+
+Mật khẩu: admin
+
+Client (ClientFe)
+
+Tài khoản test: hoang
+
+Mật khẩu test: hoang
 ---
 
 ## 1. Xác thực & cấu hình Project
