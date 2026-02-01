@@ -16,17 +16,15 @@ Client Frontend (ClientFe): https://fashion-client-1010294357760.us-central1.run
 🔐 Tài khoản demo
 
 Admin (AdFe)
-
+```bash
 Tài khoản: andmin
-
 Mật khẩu: admin
-
+```
 Client (ClientFe)
-
-Tài khoản test: hoang
-
-Mật khẩu test: hoang
----
+```bash
+Tài khoản: hoang
+Mật khẩu: hoang
+```
 
 ## 1. Xác thực & cấu hình Project
 
