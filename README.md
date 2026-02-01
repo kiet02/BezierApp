@@ -10,17 +10,12 @@ Tài liệu này mô tả **toàn bộ quy trình triển khai Fashion Project l
 🌐 URL triển khai
 
 Admin Frontend (AdFe): https://fashion-admin-1010294357760.us-central1.run.app
-
-Client Frontend (ClientFe): https://fashion-client-1010294357760.us-central1.run.app
-
-🔐 Tài khoản demo
-
-Admin (AdFe)
 ```bash
 Tài khoản: andmin
 Mật khẩu: admin
 ```
-Client (ClientFe)
+
+Client Frontend (ClientFe): https://fashion-client-1010294357760.us-central1.run.app
 ```bash
 Tài khoản: hoang
 Mật khẩu: hoang
