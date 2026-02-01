@@ -1,98 +1,146 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Fashion Project – Google Cloud Deployment
 
-# Getting Started
+Tài liệu này hướng dẫn triển khai toàn bộ hệ thống **Fashion Project** lên Google Cloud Platform (GCP).
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+> ⚠️ Lưu ý:
+>
+> - Thay toàn bộ các giá trị dạng `<PLACEHOLDER>` bằng thông tin thật của bạn
+> - Không commit thông tin nhạy cảm (password, URL thật)
 
-## Step 1: Start Metro
+---
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## Deployment Script
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+```bash
+# ==============================
+# Fashion Project - GCP Deploy
+# ==============================
 
-```sh
-# Using npm
-npm start
+# ---------
+# 1. Login
+# ---------
+gcloud auth login
 
-# OR using Yarn
-yarn start
+# ----------------------
+# 2. Create & set project
+# ----------------------
+PROJECT_ID=<PROJECT_ID>
+PROJECT_NAME=<PROJECT_NAME>
+
+gcloud projects create $PROJECT_ID --name=$PROJECT_NAME
+gcloud config set project $PROJECT_ID
+
+# -------------------------
+# 3. Enable required services
+# -------------------------
+gcloud services enable \
+  run.googleapis.com \
+  artifactregistry.googleapis.com \
+  cloudbuild.googleapis.com \
+  sqladmin.googleapis.com \
+  storage.googleapis.com
+
+# ---------------------
+# 4. Create Cloud SQL
+# ---------------------
+SQL_INSTANCE_NAME=<SQL_INSTANCE_NAME>
+DB_ROOT_PASSWORD=<DB_ROOT_PASSWORD>
+
+gcloud sql instances create $SQL_INSTANCE_NAME \
+  --database-version=MYSQL_8_0 \
+  --cpu=1 \
+  --memory=4GB \
+  --region=us-central1 \
+  --project=$PROJECT_ID \
+  --root-password="$DB_ROOT_PASSWORD"
+
+# ----------------
+# 5. Create database
+# ----------------
+DB_NAME=<DB_NAME>
+
+gcloud sql databases create $DB_NAME \
+  --instance=$SQL_INSTANCE_NAME
+
+# ----------------
+# 6. Create DB user
+# ----------------
+DB_USERNAME=<DB_USERNAME>
+DB_PASSWORD=<DB_PASSWORD>
+
+gcloud sql users create $DB_USERNAME \
+  --instance=$SQL_INSTANCE_NAME \
+  --password="$DB_PASSWORD"
+
+# -------------------------
+# 7. Upload SQL seed to GCS
+# -------------------------
+GCS_BUCKET_NAME=<GCS_BUCKET_NAME>
+
+gsutil cp database/schema_seed.sql gs://$GCS_BUCKET_NAME/schema_seed.sql
+
+# --------------------------------
+# 8. Create GCS bucket & upload images
+# --------------------------------
+gsutil mb -l us-central1 gs://$GCS_BUCKET_NAME
+gsutil iam ch allUsers:objectViewer gs://$GCS_BUCKET_NAME
+gsutil -m cp -r backend/src/main/resources/static/images gs://$GCS_BUCKET_NAME
+
+# ----------------
+# 9. Deploy Backend
+# ----------------
+BACKEND_SERVICE_NAME=<BACKEND_SERVICE_NAME>
+
+gcloud run deploy $BACKEND_SERVICE_NAME \
+  --region us-central1 \
+  --project $PROJECT_ID \
+  --source backend \
+  --clear-base-image \
+  --add-cloudsql-instances=$PROJECT_ID:us-central1:$SQL_INSTANCE_NAME \
+  --set-env-vars="DB_USERNAME=$DB_USERNAME,DB_PASSWORD=$DB_PASSWORD,GCS_BUCKET_NAME=$GCS_BUCKET_NAME" \
+  --allow-unauthenticated \
+  --memory 2Gi \
+  --cpu 2 \
+  --timeout 300
+
+# ----------------------------
+# 10. Deploy Recommendation Service
+# ----------------------------
+RECOMMEND_SERVICE_NAME=<RECOMMEND_SERVICE_NAME>
+BACKEND_URL=<BACKEND_URL>
+
+gcloud run deploy $RECOMMEND_SERVICE_NAME \
+  --source recommendationsystem \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --set-env-vars BACKEND_URL=$BACKEND_URL
+
+# ----------------
+# 11. Deploy Admin Frontend
+# ----------------
+ADMIN_SERVICE_NAME=<ADMIN_SERVICE_NAME>
+
+gcloud run deploy $ADMIN_SERVICE_NAME \
+  --source frontend/AdminFe \
+  --region us-central1 \
+  --project $PROJECT_ID \
+  --allow-unauthenticated \
+  --set-build-env-vars VITE_BACKEND_URL=$BACKEND_URL
+
+# ----------------
+# 12. Deploy Client Frontend
+# ----------------
+CLIENT_SERVICE_NAME=<CLIENT_SERVICE_NAME>
+
+gcloud run deploy $CLIENT_SERVICE_NAME \
+  --source frontend/ClientFe \
+  --region us-central1 \
+  --project $PROJECT_ID \
+  --allow-unauthenticated \
+  --set-build-env-vars VITE_BACKEND_URL=$BACKEND_URL
+
+# ----------------
+# DONE
+# ----------------
+echo "Deployment completed"
 ```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
-```
-
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
-# BezierApp
